@@ -1,0 +1,120 @@
+---
+title: "Ravi_ggplot with Error Bars-tv2"
+output: html_document
+---
+
+Load Tidyverse Package
+======================
+
+```{r warning=FALSE}
+library(tidyverse)
+getwd()
+```
+
+```##Setup working directory```
+
+```{r}
+setwd("C:/Users/kchz694/OneDrive - AZCollaboration/From Desktop 8-5-20/RT R Scripts/R_scripts/TV_RMD")
+getwd()
+```
+
+Read csv file from folder
+```{r echo=FALSE}
+tv2 <-read_csv("ex_tv2.csv") 
+head(tv2)
+```
+
+Restructuring the Data
+=============
+Restructure tidy format from wide format to longer using pivot_longer. Columns gp1_1, gp1_2 etc. to grp (new variable, which can be used to split in the next step)and tumor values to tv
+
+```{r}
+tv2 <- tv2 %>% pivot_longer(cols =2:85, names_to="grp", values_to="tv")
+head(tv2)
+```
+Now using separate func __split__ **grp** into *grp* and _replicate_ to get replicate number separate at and remove *_*
+
+```{r}
+tv2 <- tv2 %>% separate(grp, into=c("grp","replicate"),sep="_")
+head(tv2,10)
+```
+Clean up the NA values which got from the blank lines on the original data
+
+```{r}
+tv2 %>%
+  filter(!is.na(tv)) -> tv2
+
+head(tv2)
+```
+To show how paste0 works
+ ```paste0``` so it doesn't put a space between the two parts.
+```{r}
+paste0("gp",1:14)
+```
+
+Need convert grp in to factor becoz in the legend grp numbers shows in the alphabetical order (ex: gp1, gp10,gp11,gp2,etc.To avoid this confusion convert grp into levels using factor func. Join(paste) together ```Gp``` to an ordered numerical vector.
+
+```{r}
+tv2 %>%
+  mutate(grp = factor(grp, levels=paste0("gp",1:14))) -> tv2
+head(tv2)
+```
+GGPlot summarisation (instead of manual):
+====================
+Add summarisation to ```geom_line```.
+Use ```stat_summary``` and add errorbar/point.This defaults to using SEM
+
+```{r}
+tv2 %>%
+  ggplot(aes(x=Day,y=tv,color=grp)) +
+ 
+  geom_line(stat="summary", fun="mean")+
+  stat_summary(geom="errorbar", width=2.0)+
+  stat_summary(geom="point", width=0.5)+
+  #geom_point(width=0.5)+ =need to add in the stat_summary
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  coord_cartesian(ylim=c(0,2000))+
+  scale_x_continuous(breaks=c(20,40,60,80,100,120,140))+
+  xlab("Days")+
+  ylab("TV mm3")
+```
+
+ALL the code same place and use for plotly()
+geom_line(stat="summary", fun="mean")+ # need to use after stat_summary(), geom_point in order to show lines in the graph
+
+```{r}
+
+rtplot <- tv2 %>%
+  ggplot(aes(x=Day,y=tv,color=grp)) +
+  
+  stat_summary(geom="errorbar", width=2.0)+
+  stat_summary(geom="point", width=0.5)+
+  geom_line(stat="summary", fun="mean")+
+   #geom_point(width=0.5)+ =need to add in the stat_summary
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  coord_cartesian(ylim=c(0,2000))+
+  scale_x_continuous(breaks=c(20,40,60,80,100,120,140))+
+  xlab("Days after Tumor Cells Implant")+
+  ylab("TV mm3") 
+
+rtplot     
+   
+```
+
+
+
+```{r}
+library(plotly)
+rtplot1 <- ggplotly(rtplot)     
+rtplot1  
+```
+
+
+
+
+
+
+
+
